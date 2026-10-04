@@ -22,7 +22,7 @@ jobs:
       - name: NetHunter-Konfigurationen injecten
         run: |
           cd kernel
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make tama_defconfig
+          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make akari_defconfig
 
           cat <<EOF >> .config
           CONFIG_CFG80211=y
