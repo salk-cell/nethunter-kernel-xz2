@@ -17,7 +17,7 @@ jobs:
 
       - name: LineageOS Kernel-Source klonen
         run: |
-          git clone https://github.com/LineageOS/android_kernel_sony_sdm845.git -b lineage-20.0 kernel
+          git clone https://github.com/LineageOS/android_kernel_sony_sdm845.git -b lineage-20 kernel
 
       - name: NetHunter-Konfigurationen injecten
         run: |
