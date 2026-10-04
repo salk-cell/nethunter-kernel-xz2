@@ -1,64 +1,149 @@
-name: Build NetHunter Kernel for Xperia XZ2
+name: Build NetHunter Kernel for Xperia XZ2 (Clang)
 
 on:
+
   workflow_dispatch:
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: System-Abhängigkeiten installieren
+
         run: |
+
           sudo apt update
+
           sudo apt install -y build-essential bc libncurses5-dev libssl-dev bison flex \
-                                 git libelf-dev libgnutls28-dev gcc-aarch64-linux-gnu \
-                                 g++-aarch64-linux-gnu ccache zip
+
+                                 git libelf-dev libgnutls28-dev ccache zip
+
+      - name: Proton-Clang Toolchain klonen
+
+        run: |
 
       - name: LineageOS Kernel-Source klonen
-        run: |
-          git clone https://github.com/LineageOS/android_kernel_sony_sdm845.git -b lineage-20 kernel
 
-      - name: NetHunter-Konfigurationen injecten
         run: |
+
+      - name: NetHunter-Konfiguration erstellen
+
+        run: |
+
           cd kernel
-          # Zeige verfügbare Configs zur Kontrolle im Log an
-          ls arch/arm64/configs/
-          
-          # Verwende die generelle SDM845 Defconfig als Basis
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make sdm845_defconfig || ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make defconfig
 
-          cat <<EOF >> .config
+          export PATH="$(pwd)/../clang/bin:$PATH"
+
+          export ARCH=arm64
+
+          export SUBARCH=arm64
+
+          export CC=clang
+
+          export CROSS_COMPILE=aarch64-linux-gnu-
+
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+
+          # Finde und verwende die richtige Defconfig für die Tama-Plattform
+
+          if [ -f arch/arm64/configs/vendor/tama-perf_defconfig ]; then
+
+            make O=out vendor/tama-perf_defconfig
+
+          elif [ -f arch/arm64/configs/tama_defconfig ]; then
+
+            make O=out tama_defconfig
+
+          else
+
+            make O=out sdm845_defconfig
+
+          fi
+
+          # NetHunter Treiber/Optionen aktivieren
+
+          cat <<EOF >> out/.config
+
           CONFIG_CFG80211=y
+
           CONFIG_MAC80211=y
+
           CONFIG_CFG80211_WEXT=y
+
           CONFIG_USB_CONFIGFS=y
+
           CONFIG_USB_CONFIGFS_F_HID=y
+
           CONFIG_USB_G_HID=y
+
           CONFIG_USB_USBNET=y
+
           CONFIG_USB_NET_CDCETHER=y
+
           CONFIG_BT_HCIBTUSB=y
+
           CONFIG_RTL8812AU=m
+
           CONFIG_RTL8188EUS=m
+
           CONFIG_ATH9K_HTC=m
+
           EOF
 
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make olddefconfig
+          make O=out olddefconfig
 
       - name: Kernel kompilieren
+
         run: |
+
           cd kernel
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j$(nproc) Image.gz-dtb KCFLAGS="-Wno-error"
+
+          export PATH="$(pwd)/../clang/bin:$PATH"
+
+          export ARCH=arm64
+
+          export SUBARCH=arm64
+
+          export CC=clang
+
+          export CROSS_COMPILE=aarch64-linux-gnu-
+
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+
+          # Kompiliere den Kernel (-Wno-error ignoriert harmlose Warnungen)
+
+          make O=out -j$(nproc) KCFLAGS="-Wno-error"
 
       - name: AnyKernel3 paketieren
+
         run: |
-          git clone https://github.com/osm0sis/AnyKernel3.git AK3
-          cp kernel/arch/arm64/boot/Image.gz-dtb AK3/
+
+          # Suche die kompilierte Kernel-Datei und kopiere sie
+
+          KERNEL_FILE=$(find kernel/out/arch/arm64/boot/ -name "Image.gz-dtb" -o -name "Image.gz" -o -name "Image" | head -n 1)
+
+          echo "Gefundene Kernel-Datei: $KERNEL_FILE"
+
+          cp "$KERNEL_FILE" AK3/
+
           cd AK3
+
           zip -r9 NetHunter-Kernel-akari.zip * -x .git README.md
 
       - name: Kernel als Download-Artefakt bereitstellen
+
         uses: actions/upload-artifact@v4
+
         with:
+
           name: NetHunter-Kernel-akari
+
           path: AK3/NetHunter-Kernel-akari.zip
