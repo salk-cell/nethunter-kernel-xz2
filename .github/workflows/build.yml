@@ -48,7 +48,7 @@ jobs:
       - name: Kernel kompilieren
         run: |
           cd kernel
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j$(nproc) Image.gz-dtb KCFLAGS="-Wno-error
+          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j$(nproc) Image.gz-dtb KCFLAGS="-Wno-error"
 
       - name: AnyKernel3 paketieren
         run: |
