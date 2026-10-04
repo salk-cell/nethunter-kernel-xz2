@@ -22,7 +22,11 @@ jobs:
       - name: NetHunter-Konfigurationen injecten
         run: |
           cd kernel
-          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make akari_defconfig
+          # Zeige verfügbare Configs zur Kontrolle im Log an
+          ls arch/arm64/configs/
+          
+          # Verwende die generelle SDM845 Defconfig als Basis
+          ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make sdm845_defconfig || ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make defconfig
 
           cat <<EOF >> .config
           CONFIG_CFG80211=y
